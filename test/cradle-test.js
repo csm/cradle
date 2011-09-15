@@ -24,7 +24,7 @@ function mixin(target) {
 
 var cradle = require('../lib/cradle');
 
-vows.describe("Cradle").addBatch(seed.requireSeed()).addBatch({
+vows.describe("cradle").addBatch(seed.requireSeed()).addBatch({
     "Default connection settings": {
         topic: function () {
             cradle.setup({
@@ -112,10 +112,10 @@ vows.describe("Cradle").addBatch(seed.requireSeed()).addBatch({
                 assert.ok(db.cache.get('bob')._rev);
             },
             "when fetching the cached document": {
-                topic: function(db) {
+                topic: function (db) {
                     db.get('bob', this.callback)
                 },
-                "document contains _id": function(e, doc) {
+                "document contains _id": function (e, doc) {
                     assert.equal(doc._id, 'bob');
                 }
             },
@@ -136,6 +136,23 @@ vows.describe("Cradle").addBatch(seed.requireSeed()).addBatch({
                     assert.equal(doc.size, 12);
                     assert.isUndefined(doc.ears);
                 }
+            }
+        },
+        "save() with / in id": {
+            topic: function (db) {
+                var promise = new(events.EventEmitter);
+                db.save('bob/someotherdoc', {size: 12}, function (e, res) {
+                    promise.emit('success', res, db.cache.get('bob/someotherdoc'));
+                });
+                return promise;
+            },
+            "return a 201": status(201),
+            "allow an overwrite": function (res) {
+               assert.match(res.rev, /^1/);
+            },
+            "caches the updated document": function (e, res, doc) {
+                assert.ok(doc);
+                assert.equal(doc.size, 12);
             }
         },
         "merge()": {
@@ -357,7 +374,7 @@ vows.describe("Cradle").addBatch(seed.requireSeed()).addBatch({
                     }
                 },
                 "with a doc containing non-ASCII characters": {
-                    topic: function(db) {
+                    topic: function (db) {
                         db.save('john', {umlauts: 'äöü'}, this.callback);
                     },
                     "creates a new document (201)": status(201)
